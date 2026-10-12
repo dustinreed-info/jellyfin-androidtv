@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="pref_subtitles_in_letterbox">Prefer subtitles in black bars</string>
-    <string name="pref_subtitles_in_letterbox_summary">Place ordinary text subtitles in the lower black bar when they fit. Restart playback after changing this setting.</string>
+    <string name="pref_subtitles_in_letterbox_summary">Place ordinary text subtitles in the lower black bar. Captions taller than the bar keep their bottom lines in it. Restart playback after changing this setting.</string>
     <string name="pref_subtitles_position_safety_summary">Zero offset keeps a small safety margin so the bottoms of letters remain visible.</string>
 </resources>

@@ -28,7 +28,7 @@ import java.util.List;
 
 /**
  * AI-assisted prototype using public Media3 APIs. The video renderer keeps its own positioned and bitmap cues.
- * Ordinary unpositioned captions use a sibling SubtitleView only while they fit inside a measured lower bar.
+ * Ordinary unpositioned captions use a sibling SubtitleView anchored in a measured lower bar; taller ones extend upward.
  * See https://developer.android.com/reference/androidx/media3/ui/SubtitleView and Media3 1.8 SubtitlePainter.
  */
 @OptIn(markerClass = UnstableApi.class)

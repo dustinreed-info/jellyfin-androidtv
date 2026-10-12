@@ -16,10 +16,11 @@ The font size stays unchanged.
 
 For cropped widescreen files whose bars are added by the player, also enable
 **Prefer subtitles in black bars**. This setting defaults to off and requires restarting playback
-when changed. When the measured caption fits, a separate subtitle view places it in the lower bar.
+when changed. A separate subtitle view places the measured caption in the lower bar.
 
-If the bar is too shallow for the current caption/font size, the existing renderer remains responsible
-for the caption. Image subtitles, explicitly positioned text, multiple simultaneous cues, stretched
+If the bar is too shallow for the current caption/font size (for example three lines in a 2.39:1 bar),
+the caption's bottom lines stay in the bar and only the remaining lines extend upward into the picture.
+Captions taller than half the screen stay with the existing renderer. Image subtitles, explicitly positioned text, multiple simultaneous cues, stretched
 or zoomed viewports, and contracted video retain their existing coordinate system. Automatic detection
 of bars encoded into the video is not implemented. Styled ASS rendering is not changed by this patch.
 The separate experimental player backend is not changed.

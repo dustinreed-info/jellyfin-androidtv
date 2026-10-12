@@ -24,9 +24,22 @@ class LetterboxSubtitlePlacementTests : FunSpec({
 		wide(captionHeight = 124, inset = 86).shouldNotBeNull().bottomInset shouldBe 8
 	}
 
-	test("tall or wrapped captions fall back to the video renderer") {
-		wide(captionHeight = 125).shouldBeNull()
-		wide(captionHeight = 500).shouldBeNull()
+	test("a caption taller than the bar keeps its bottom lines in the bar") {
+		val placement = wide(captionHeight = 200, inset = 86).shouldNotBeNull()
+		placement.top shouldBe 864
+		placement.height shouldBe 216
+		placement.bottomInset shouldBe 8
+	}
+
+	test("one pixel too tall for the bar anchors at the lowest safe position") {
+		val placement = wide(captionHeight = 125).shouldNotBeNull()
+		placement.top shouldBe 1080 - 141
+		placement.bottomInset shouldBe 8
+	}
+
+	test("captions taller than half the screen fall back to the video renderer") {
+		wide(captionHeight = 524).shouldNotBeNull()
+		wide(captionHeight = 525).shouldBeNull()
 	}
 
 	test("full-frame video and encoded bars cannot be inferred from geometry") {

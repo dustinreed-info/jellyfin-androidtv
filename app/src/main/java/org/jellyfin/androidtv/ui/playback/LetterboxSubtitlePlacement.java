@@ -13,7 +13,8 @@ public final class LetterboxSubtitlePlacement {
     }
 
     /**
-     * Returns null when the fitted video has no lower bar, or the caption cannot fit at its current size.
+     * Returns null when the fitted video has no lower bar. A caption taller than the bar keeps its bottom lines
+     * in the bar and extends upward into the video, so as much of it as possible stays out of the picture.
      * Coordinates describe the actual video surface within the playback viewport, in pixels.
      */
     public static LetterboxSubtitlePlacement calculate(int width, int height, int videoLeft, int videoTop,
@@ -26,7 +27,14 @@ public final class LetterboxSubtitlePlacement {
         if (videoLeft != 0 || videoRight != width) return null;
         int barHeight = height - videoBottom;
         if (Math.abs((long) videoTop - barHeight) > 2) return null;
-        if (margin > barHeight / 2 || captionHeight > barHeight - margin * 2) return null;
+        if (margin > barHeight / 2) return null;
+
+        if (captionHeight > barHeight - margin * 2) {
+            // Anchor at the lowest safe position; captions taller than half the screen stay with the video renderer.
+            int regionHeight = captionHeight + margin * 2;
+            if (regionHeight > height / 2) return null;
+            return new LetterboxSubtitlePlacement(height - regionHeight, regionHeight, margin);
+        }
 
         int maximumInset = barHeight - captionHeight - margin;
         int inset = Math.max(margin, Math.min(requestedBottomInset, maximumInset));
