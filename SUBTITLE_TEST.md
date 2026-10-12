@@ -2,7 +2,7 @@
 
 Local AI-assisted prototype based on Jellyfin Android TV **v0.19.9**,
 commit `14a5e160efbb33d471ef2efe7ed9073fc2206785`.
-Current test version: **0.19.9-subtitles.3**, labeled **Jellyfin Subtitle Test**.
+Current test version: **0.19.9-subtitles.4**, labeled **Jellyfin Subtitle Test**.
 Application ID: `org.jellyfin.androidtv.debug`.
 
 ## Try the updated build
@@ -46,6 +46,14 @@ The old zero-offset fixture also had complete glyphs in the software capture; th
 physical/file-specific clipping was not reproduced. The added margin provides more room at the edge,
 and the owner's two real movies still need a repeat check.
 
+## Tall-caption check (subtitles.4)
+
+On the Fire Stick with the wide 2.39:1 fixture, a four-line caption previously rendered entirely
+inside the picture (rows 1458–1838, none in the bar). With **Prefer subtitles in black bars** it now
+renders at rows 1740–2120: 204 of its 323 text rows are in the lower bar (which starts at row 1878),
+with 40 px clearance above the screen edge. A two-line caption still fits fully in the bar.
+Captures: `docs/subtitle-test-v4/`.
+
 ## Verification
 
 **28 unit tests pass**, including nine letterbox placement tests and six safety-margin tests.
@@ -75,7 +83,7 @@ It also verifies private-data hashes immediately after installation without prin
 Use JDK 21 and Android SDK platform 36:
 
 ```sh
-./gradlew --no-daemon --max-workers=4 -Pjellyfin.version=0.19.9-subtitles.3 \
+./gradlew --no-daemon --max-workers=4 -Pjellyfin.version=0.19.9-subtitles.4 \
   :app:testDebugUnitTest :app:assembleDebug
 ```
 
