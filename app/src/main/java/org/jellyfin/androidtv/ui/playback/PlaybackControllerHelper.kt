@@ -112,21 +112,30 @@ fun PlaybackController.setSubtitleIndex(index: Int, force: Boolean = false) {
 					}
 				} else {
 					// The server does not send a reliable index in all cases, so calculate it manually
-					val localIndex = mediaSource.mediaStreams.orEmpty()
-						.filter { it.type == MediaStreamType.SUBTITLE }
-						.filter { it.deliveryMethod == SubtitleDeliveryMethod.EMBED || it.deliveryMethod == SubtitleDeliveryMethod.HLS }
-						.indexOf(stream)
-						.takeIf { it != -1 }
+					val textGroups = mVideoManager.mExoPlayer.currentTracks.groups
+						.filter { it.type == C.TRACK_TYPE_TEXT }
+						.filterNot { it.length == 1 && it.getTrackFormat(0).id?.contains(":JF_EXTERNAL:") == true }
+					val subtitleStreams = mediaSource.mediaStreams.orEmpty().filter { it.type == MediaStreamType.SUBTITLE }
+					// A direct-played container exposes every embedded track, including ones the server delivers another way
+					// (an ASS track it burns in, for example); an HLS manifest only carries the HLS-delivered tracks.
+					val candidates = if (stream.deliveryMethod == SubtitleDeliveryMethod.HLS) {
+						subtitleStreams.filter { it.deliveryMethod == SubtitleDeliveryMethod.HLS }
+					} else {
+						subtitleStreams.filter { !it.isExternal }
+					}
+					val localIndex = matchSubtitleTrack(
+						candidates.map { it.language },
+						candidates.indexOf(stream),
+						textGroups.map { it.getTrackFormat(0).language },
+					)
 
 					if (localIndex == null) {
 						Timber.w("Failed to find local subtitle index")
 						return setSubtitleIndex(-1)
 					}
 
-					mVideoManager.mExoPlayer.currentTracks.groups
-						.filter { it.type == C.TRACK_TYPE_TEXT }
-						.filterNot { it.length == 1 && it.getTrackFormat(0).id?.endsWith(":JF_EXTERNAL:$index") == true }
-						.getOrNull(localIndex)
+					Timber.i("Matched subtitle stream $index to text track ${localIndex + 1} of ${textGroups.size}")
+					textGroups[localIndex]
 				}?.mediaTrackGroup
 
 				if (group == null) {
