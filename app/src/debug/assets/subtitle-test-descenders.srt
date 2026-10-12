@@ -1,0 +1,20 @@
+1
+00:00:00,000 --> 00:00:08,000
+gypsy pygmy puppy gypqj
+
+2
+00:00:08,000 --> 00:00:16,000
+First line: ordinary subtitle text
+Bottom line: gypsy pygmy puppy gypqj
+
+3
+00:00:16,000 --> 00:00:24,000
+{\an8}Positioned gypsy pygmy puppy gypqj
+
+4
+00:00:24,000 --> 00:00:32,000
+Four-line caption with unchanged text size
+Second line gypsy pygmy puppy gypqj
+Third line gypsy pygmy puppy gypqj
+Bottom line gypsy pygmy puppy gypqj
+

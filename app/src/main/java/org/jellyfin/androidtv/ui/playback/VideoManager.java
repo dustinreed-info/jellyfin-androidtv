@@ -71,6 +71,8 @@ public class VideoManager {
     private PlaybackOverlayFragmentHelper _helper;
     public ExoPlayer mExoPlayer;
     private PlayerView mExoPlayerView;
+    private LetterboxSubtitleOverlay letterboxSubtitles;
+    private View.OnLayoutChangeListener subtitleSafetyListener;
     private Handler mHandler = new Handler();
 
     private long mMetaDuration = -1;
@@ -116,8 +118,18 @@ public class VideoManager {
                 TypefaceCompat.create(activity, Typeface.DEFAULT, textWeight, false)
         );
         mExoPlayerView.getSubtitleView().setFractionalTextSize(0.0533f * userPreferences.get(UserPreferences.Companion.getSubtitlesTextSize()));
-        mExoPlayerView.getSubtitleView().setBottomPaddingFraction(userPreferences.get(UserPreferences.Companion.getSubtitlesOffsetPosition()));
+        subtitleSafetyListener = SubtitleViewSafety.apply(mExoPlayerView.getSubtitleView(),
+                userPreferences.get(UserPreferences.Companion.getSubtitlesOffsetPosition()));
         mExoPlayerView.getSubtitleView().setStyle(subtitleStyle);
+
+        if (userPreferences.get(UserPreferences.Companion.getSubtitlesInLetterbox())) {
+            letterboxSubtitles = new LetterboxSubtitleOverlay(activity, mExoPlayerView, subtitleStyle,
+                    0.0533f * userPreferences.get(UserPreferences.Companion.getSubtitlesTextSize()),
+                    userPreferences.get(UserPreferences.Companion.getSubtitlesOffsetPosition()));
+            FrameLayout parent = (FrameLayout) mExoPlayerView.getParent();
+            parent.addView(letterboxSubtitles, parent.indexOfChild(mExoPlayerView) + 1,
+                    new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        }
 
         mExoPlayer.addListener(new Player.Listener() {
             @Override
@@ -565,6 +577,14 @@ public class VideoManager {
 
     private void releasePlayer() {
         _helper.setScreensaverLock(false);
+        if (subtitleSafetyListener != null) {
+            mExoPlayerView.getSubtitleView().removeOnLayoutChangeListener(subtitleSafetyListener);
+            subtitleSafetyListener = null;
+        }
+        if (letterboxSubtitles != null) {
+            letterboxSubtitles.release();
+            letterboxSubtitles = null;
+        }
         if (mExoPlayer != null) {
             mExoPlayerView.setPlayer(null);
             mExoPlayer.release();

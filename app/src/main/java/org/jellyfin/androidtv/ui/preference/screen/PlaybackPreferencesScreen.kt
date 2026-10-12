@@ -102,6 +102,12 @@ class PlaybackPreferencesScreen : OptionsFragment() {
 		category {
 			setTitle(R.string.pref_subtitles)
 
+			checkbox {
+				setTitle(R.string.pref_subtitles_in_letterbox)
+				setContent(R.string.pref_subtitles_in_letterbox_summary)
+				bind(userPreferences, UserPreferences.subtitlesInLetterbox)
+			}
+
 			@Suppress("MagicNumber")
 			colorList {
 				setTitle(R.string.lbl_subtitle_text_color)
@@ -231,6 +237,7 @@ class PlaybackPreferencesScreen : OptionsFragment() {
 			@Suppress("MagicNumber")
 			seekbar {
 				setTitle(R.string.pref_subtitles_position)
+				setContent(R.string.pref_subtitles_position_safety_summary)
 				min = 0 // 0.0f
 				max = 80 // 0.8f
 				increment = 1 // 0.01f
