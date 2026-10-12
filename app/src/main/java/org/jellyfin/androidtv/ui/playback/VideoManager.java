@@ -366,10 +366,14 @@ public class VideoManager {
         try {
             // Add external subtitles
             List<MediaItem.SubtitleConfiguration> subtitleConfigurations = new ArrayList<>();
+            List<String> assSourceIds = new ArrayList<>();
             for (MediaStream mediaStream : streamInfo.getMediaSource().getMediaStreams()) {
                 if (mediaStream.getType() != MediaStreamType.SUBTITLE) continue;
 
                 if (mediaStream.getDeliveryMethod() == SubtitleDeliveryMethod.EXTERNAL) {
+                    if ("ass".equalsIgnoreCase(mediaStream.getCodec()) || "ssa".equalsIgnoreCase(mediaStream.getCodec())) {
+                        assSourceIds.add("JF_EXTERNAL:" + mediaStream.getIndex());
+                    }
                     Uri subtitleUri = Uri.parse(api.createUrl(mediaStream.getDeliveryUrl(), Collections.emptyMap(), Collections.emptyMap(), true));
                     MediaItem.SubtitleConfiguration subtitleConfiguration = new MediaItem.SubtitleConfiguration.Builder(subtitleUri)
                             .setId("JF_EXTERNAL:" + String.valueOf(mediaStream.getIndex()))
@@ -382,6 +386,8 @@ public class VideoManager {
                     subtitleConfigurations.add(subtitleConfiguration);
                 }
             }
+
+            if (letterboxSubtitles != null) letterboxSubtitles.setAssSourceIds(assSourceIds);
 
             MediaItem mediaItem = new MediaItem.Builder()
                     .setUri(Uri.parse(path))

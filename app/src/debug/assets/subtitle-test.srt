@@ -9,7 +9,7 @@ Both lines should fit inside the lower black bar.
 
 3
 00:00:16,000 --> 00:00:24,000
-{\an8}Positioned subtitles stay inside the video.
+{\an8}Top subtitles move into the upper black bar.
 
 4
 00:00:24,000 --> 00:00:32,000

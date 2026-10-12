@@ -71,8 +71,14 @@ public final class SubtitlePlacementTestActivity extends Activity {
                 .setLanguage("en")
                 .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
                 .build();
+        // Embedded-track fixtures (encoded bars): PGS images or native ASS with default, \pos and \an8 lines.
+        boolean embedded = getIntent().getBooleanExtra("pgs", false) || getIntent().getBooleanExtra("ass", false);
+        if (getIntent().getBooleanExtra("pgs", false)) video = "subtitle-test-pgs.mkv";
+        if (getIntent().getBooleanExtra("ass", false)) video = "subtitle-test-ass.mkv";
+        player.setTrackSelectionParameters(player.getTrackSelectionParameters().buildUpon()
+                .setPreferredTextLanguage("en").build());
         player.setMediaItem(new MediaItem.Builder().setUri("asset:///" + video)
-                .setSubtitleConfigurations(Collections.singletonList(subtitles)).build());
+                .setSubtitleConfigurations(embedded ? Collections.emptyList() : Collections.singletonList(subtitles)).build());
         player.setRepeatMode(Player.REPEAT_MODE_ONE);
         player.seekTo(getIntent().getIntExtra("position_ms", 0));
         player.prepare();

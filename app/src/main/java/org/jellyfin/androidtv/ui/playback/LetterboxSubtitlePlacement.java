@@ -1,15 +1,19 @@
 package org.jellyfin.androidtv.ui.playback;
 
-/** Geometry for moving a caption into a player-generated lower letterbox bar. */
+/** Geometry for moving a caption into the lower or upper letterbox bar. */
 public final class LetterboxSubtitlePlacement {
+    /** Rows the player's own letterbox bars may differ by after viewport rounding. */
+    public static final int GEOMETRY_TOLERANCE = 2;
+
     public final int top;
     public final int height;
-    public final int bottomInset;
+    /** Distance between the caption and the screen edge it is anchored to. */
+    public final int inset;
 
-    private LetterboxSubtitlePlacement(int top, int height, int bottomInset) {
+    private LetterboxSubtitlePlacement(int top, int height, int inset) {
         this.top = top;
         this.height = height;
-        this.bottomInset = bottomInset;
+        this.inset = inset;
     }
 
     /**
@@ -19,14 +23,21 @@ public final class LetterboxSubtitlePlacement {
      */
     public static LetterboxSubtitlePlacement calculate(int width, int height, int videoLeft, int videoTop,
             int videoRight, int videoBottom, int captionHeight, int margin, int requestedBottomInset) {
-        if (width <= 0 || height <= 0 || captionHeight <= 0 || margin < 0 || requestedBottomInset < 0) return null;
-        if (videoLeft < 0 || videoTop <= 0 || videoRight <= videoLeft || videoBottom <= videoTop) return null;
-        if (videoRight > width || videoBottom >= height) return null;
-
+        if (width <= 0 || videoLeft < 0 || videoRight <= videoLeft || videoRight > width) return null;
         // A fitted wide video spans the viewport width. Pillarboxing and smaller video windows do not qualify.
         if (videoLeft != 0 || videoRight != width) return null;
-        int barHeight = height - videoBottom;
-        if (Math.abs((long) videoTop - barHeight) > 2) return null;
+        return bottom(height, videoTop, videoBottom, GEOMETRY_TOLERANCE, captionHeight, margin, requestedBottomInset);
+    }
+
+    /**
+     * Places a caption in the lower bar below the picture rows [pictureTop, pictureBottom) of the viewport.
+     * The bars may be added by the player, encoded into the video, or both.
+     */
+    public static LetterboxSubtitlePlacement bottom(int height, int pictureTop, int pictureBottom, int tolerance,
+            int captionHeight, int margin, int requestedBottomInset) {
+        if (!hasBars(height, pictureTop, pictureBottom, tolerance) || captionHeight <= 0 || margin < 0
+                || requestedBottomInset < 0) return null;
+        int barHeight = height - pictureBottom;
         if (margin > barHeight / 2) return null;
 
         if (captionHeight > barHeight - margin * 2) {
@@ -38,6 +49,23 @@ public final class LetterboxSubtitlePlacement {
 
         int maximumInset = barHeight - captionHeight - margin;
         int inset = Math.max(margin, Math.min(requestedBottomInset, maximumInset));
-        return new LetterboxSubtitlePlacement(videoBottom, barHeight, inset);
+        return new LetterboxSubtitlePlacement(pictureBottom, barHeight, inset);
+    }
+
+    /** Mirror of {@link #bottom} for the upper bar: anchored below the top edge, extending downward when tall. */
+    public static LetterboxSubtitlePlacement top(int height, int pictureTop, int pictureBottom, int tolerance,
+            int captionHeight, int margin) {
+        if (!hasBars(height, pictureTop, pictureBottom, tolerance) || captionHeight <= 0 || margin < 0) return null;
+        if (margin > pictureTop / 2) return null;
+
+        int regionHeight = Math.max(pictureTop, captionHeight + margin * 2);
+        if (regionHeight > height / 2) return null;
+        return new LetterboxSubtitlePlacement(0, regionHeight, margin);
+    }
+
+    /** True for a picture with bars of (nearly) equal height above and below it. */
+    static boolean hasBars(int height, int pictureTop, int pictureBottom, int tolerance) {
+        if (height <= 0 || pictureTop <= 0 || pictureBottom <= pictureTop || pictureBottom >= height) return false;
+        return Math.abs((long) pictureTop - (height - pictureBottom)) <= tolerance;
     }
 }
