@@ -10,6 +10,9 @@ import android.view.PixelCopy;
 import android.view.SurfaceView;
 import android.view.View;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import timber.log.Timber;
 
 /**
@@ -24,6 +27,9 @@ public final class EncodedBarDetector {
     /** Whether the player is currently showing moving video. */
     public interface Playback {
         boolean isPlaying();
+
+        /** Identifies the playing video, or null; a crop measured for it is reused when it plays again. */
+        String itemKey();
     }
 
     private static final int SAMPLE_WIDTH = 96;
@@ -36,6 +42,14 @@ public final class EncodedBarDetector {
     private static final long SLOW_COPY_MS = 100;
     /** Copy attempts per item on such devices: enough for the matching frames a crop needs. */
     private static final int SLOW_DEVICE_COPIES = EncodedBarScan.REQUIRED_MATCHES + 2;
+
+    /** Crops measured this session, so resuming or replaying an item costs no frame copies. Main thread only. */
+    private static final Map<String, int[]> KNOWN_CROPS = new LinkedHashMap<String, int[]>(16, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, int[]> eldest) {
+            return size() > 50;
+        }
+    };
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final HandlerThread thread = new HandlerThread("EncodedBarDetector");
@@ -107,6 +121,14 @@ public final class EncodedBarDetector {
         SurfaceView view = (SurfaceView) surface;
         int width = view.getWidth();
         int height = view.getHeight();
+        String key = playback.itemKey();
+        int[] known = key != null ? KNOWN_CROPS.get(key) : null;
+        if (known != null) {
+            scan.restore(known);
+            Timber.i("Reusing the encoded bars measured earlier for this video");
+            onChange.run();
+            return;
+        }
         if (!playback.isPlaying() || width <= 0 || height <= 0 || !view.getHolder().getSurface().isValid()) {
             schedule(QUICK_INTERVAL_MS);
             return;
@@ -151,6 +173,8 @@ public final class EncodedBarDetector {
             copies++;
             if (scan.update(luma, SAMPLE_WIDTH, SAMPLE_HEIGHT)) onChange.run();
             if (scan.measured()) {
+                String key = playback.itemKey();
+                if (key != null) KNOWN_CROPS.put(key, scan.snapshot());
                 Timber.i("Encoded bars measured after %d copies (last took %d ms): picture %.3f-%.3f",
                         copies, cost, scan.topFraction(), scan.bottomFraction());
                 return;

@@ -46,6 +46,8 @@ import java.util.Set;
 @OptIn(markerClass = UnstableApi.class)
 public final class LetterboxSubtitleOverlay extends FrameLayout {
     private static final float INNER_TEXT_PADDING = 0.125f;
+    /** A caption taller than its bar may shrink to this share of its size to fit inside the bar. */
+    private static final float MINIMUM_FIT_SCALE = 0.6f;
     // Media3 SsaParser places alignment-only lines at these fractions; overridden placement (\pos) differs.
     private static final float SSA_DEFAULT_BOTTOM_LINE = 0.95f;
     private static final float SSA_DEFAULT_CENTER_POSITION = 0.5f;
@@ -138,7 +140,20 @@ public final class LetterboxSubtitleOverlay extends FrameLayout {
         cues = player.getCurrentCues().cues;
 
         detector = EncodedBarDetector.isSupported(videoSurface)
-                ? new EncodedBarDetector(videoSurface, player::isPlaying, this::updatePlacement) : null;
+                ? new EncodedBarDetector(videoSurface, new EncodedBarDetector.Playback() {
+                    @Override
+                    public boolean isPlaying() {
+                        return player.isPlaying();
+                    }
+
+                    @Override
+                    public String itemKey() {
+                        MediaItem item = player.getCurrentMediaItem();
+                        // The path names the video; the query (with credentials) is left out.
+                        return item == null || item.localConfiguration == null ? null
+                                : item.localConfiguration.uri.getPath();
+                    }
+                }, this::updatePlacement) : null;
         if (detector != null) detector.start();
     }
 
@@ -272,6 +287,16 @@ public final class LetterboxSubtitleOverlay extends FrameLayout {
         Cue cue = candidates.get(0);
         float cueTextSize = cueTextSize(cue, textSize, cueArea);
         int textHeight = measureCaptionHeight(cue, cueTextSize, width);
+        // Large text sizes make captions taller than the bar; shrink a little rather than cover the picture.
+        int room = (bar == Bar.BOTTOM ? height - pictureBottom : pictureTop) - margin * 2;
+        boolean resized = false;
+        for (int attempt = 0; attempt < 3 && textHeight > room && room > 0; attempt++) {
+            float minimum = cueTextSize(cue, textSize, cueArea) * MINIMUM_FIT_SCALE;
+            if (cueTextSize <= minimum) break;
+            cueTextSize = Math.max(minimum, cueTextSize * room / textHeight);
+            textHeight = measureCaptionHeight(cue, cueTextSize, width);
+            resized = true;
+        }
         LetterboxSubtitlePlacement placement = textHeight <= 0 ? null : bar == Bar.BOTTOM
                 ? LetterboxSubtitlePlacement.bottom(height, pictureTop, pictureBottom, tolerance, textHeight, margin, requestedInset)
                 : LetterboxSubtitlePlacement.top(height, pictureTop, pictureBottom, tolerance, textHeight, margin);
@@ -287,7 +312,7 @@ public final class LetterboxSubtitleOverlay extends FrameLayout {
             builder.setLine((float) (placement.top + placement.inset) / height, Cue.LINE_TYPE_FRACTION)
                     .setLineAnchor(Cue.ANCHOR_TYPE_START);
         }
-        if (cue.textSize != Cue.DIMEN_UNSET) builder.setTextSize(cueTextSize / height, Cue.TEXT_SIZE_TYPE_FRACTIONAL_IGNORE_PADDING);
+        if (resized || cue.textSize != Cue.DIMEN_UNSET) builder.setTextSize(cueTextSize / height, Cue.TEXT_SIZE_TYPE_FRACTIONAL_IGNORE_PADDING);
         moved.add(builder.build());
     }
 

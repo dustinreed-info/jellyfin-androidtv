@@ -96,6 +96,18 @@ public final class EncodedBarScan {
         return pictureBottom <= 0 || pictureBottom >= rows ? 1 : (float) pictureBottom / rows;
     }
 
+    /** The accepted crop as {rows, top, bottom}, for {@link #restore}; null before one is measured. */
+    public int[] snapshot() {
+        return measured() ? new int[] {rows, pictureTop, pictureBottom} : null;
+    }
+
+    public void restore(int[] crop) {
+        reset();
+        rows = crop[0];
+        pictureTop = crop[1];
+        pictureBottom = crop[2];
+    }
+
     public void reset() {
         rows = 0;
         pictureTop = pictureBottom = candidateTop = candidateBottom = -1;
