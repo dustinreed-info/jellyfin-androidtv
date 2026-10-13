@@ -81,6 +81,11 @@ public final class EncodedBarScan {
         return true;
     }
 
+    /** True once a crop, or a full-frame picture, has been accepted. */
+    public boolean measured() {
+        return pictureTop >= 0;
+    }
+
     /** Accepted picture top as a fraction of the frame height, or 0 when no bars are known. */
     public float topFraction() {
         return pictureTop <= 0 || rows <= 0 ? 0 : (float) pictureTop / rows;

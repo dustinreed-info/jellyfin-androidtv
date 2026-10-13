@@ -138,7 +138,7 @@ public final class LetterboxSubtitleOverlay extends FrameLayout {
         cues = player.getCurrentCues().cues;
 
         detector = EncodedBarDetector.isSupported(videoSurface)
-                ? new EncodedBarDetector(videoSurface, this::updatePlacement) : null;
+                ? new EncodedBarDetector(videoSurface, player::isPlaying, this::updatePlacement) : null;
         if (detector != null) detector.start();
     }
 
