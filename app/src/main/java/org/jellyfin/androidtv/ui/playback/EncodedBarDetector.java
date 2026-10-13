@@ -1,7 +1,6 @@
 package org.jellyfin.androidtv.ui.playback;
 
 import android.graphics.Bitmap;
-import android.graphics.Rect;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -33,6 +32,10 @@ public final class EncodedBarDetector {
     private static final long SLOW_INTERVAL_MS = 30000;
     /** Successful copies made at the quick interval before giving up on frequent measuring (dark films). */
     private static final int QUICK_COPIES = 20;
+    /** A copy slower than this stalls the display on this device, so only a few are made per item. */
+    private static final long SLOW_COPY_MS = 100;
+    /** Copy attempts per item on such devices: enough for the matching frames a crop needs. */
+    private static final int SLOW_DEVICE_COPIES = EncodedBarScan.REQUIRED_MATCHES + 2;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final HandlerThread thread = new HandlerThread("EncodedBarDetector");
@@ -43,12 +46,13 @@ public final class EncodedBarDetector {
     private final Runnable onChange;
     private final int[] pixels = new int[SAMPLE_WIDTH * SAMPLE_HEIGHT];
     private final int[] luma = new int[SAMPLE_WIDTH * SAMPLE_HEIGHT];
-    private final Rect source = new Rect();
     private Bitmap bitmap;
     private boolean running;
     private boolean copying;
     private long copyStarted;
     private int copies;
+    private int attempts;
+    private boolean slowDevice;
 
     private final Runnable sample = this::sample;
 
@@ -80,6 +84,7 @@ public final class EncodedBarDetector {
     public void reset() {
         scan.reset();
         copies = 0;
+        attempts = 0;
         onChange.run();
         if (running && !copying) schedule(QUICK_INTERVAL_MS);
     }
@@ -106,8 +111,6 @@ public final class EncodedBarDetector {
             schedule(QUICK_INTERVAL_MS);
             return;
         }
-        // Bars span the full width, so a centre strip is enough.
-        source.set(width * 3 / 8, 0, width * 5 / 8, height);
         copying = true;
         copyHandler.post(() -> request(view));
     }
@@ -116,11 +119,8 @@ public final class EncodedBarDetector {
     private void request(SurfaceView view) {
         copyStarted = SystemClock.elapsedRealtime();
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                PixelCopy.request(view, source, bitmap, this::onCopied, copyHandler);
-            } else {
-                PixelCopy.request(view, bitmap, this::onCopied, copyHandler);
-            }
+            // The whole frame: a source rectangle is in video buffer pixels, not view pixels, and would crop the bars.
+            PixelCopy.request(view, bitmap, this::onCopied, copyHandler);
         } catch (IllegalArgumentException e) {
             mainHandler.post(() -> finish(false, 0));
         }
@@ -144,15 +144,21 @@ public final class EncodedBarDetector {
         // luma is only rewritten by the next copy, which waits for this flag.
         copying = false;
         if (!running) return;
-        if (!copied) Timber.d("Encoded bar copy failed");
+        attempts++;
+        if (cost > SLOW_COPY_MS) slowDevice = true;
+        if (!copied) Timber.i("Encoded bar copy failed");
         if (copied) {
             copies++;
             if (scan.update(luma, SAMPLE_WIDTH, SAMPLE_HEIGHT)) onChange.run();
             if (scan.measured()) {
-                Timber.d("Encoded bars measured after %d copies (last took %d ms): picture %.3f-%.3f",
+                Timber.i("Encoded bars measured after %d copies (last took %d ms): picture %.3f-%.3f",
                         copies, cost, scan.topFraction(), scan.bottomFraction());
                 return;
             }
+        }
+        if (slowDevice && attempts >= SLOW_DEVICE_COPIES) {
+            Timber.i("Encoded bar copies take %d ms here; stopped after %d attempts without a crop", cost, attempts);
+            return;
         }
         schedule(copies < QUICK_COPIES ? QUICK_INTERVAL_MS : SLOW_INTERVAL_MS);
     }
