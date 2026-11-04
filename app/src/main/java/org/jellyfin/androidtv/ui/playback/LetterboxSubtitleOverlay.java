@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * AI-assisted prototype using public Media3 APIs. Moves captions out of the picture into the letterbox bars,
+ * Moves captions out of the picture into the letterbox bars,
  * whether the player adds the bars or they are encoded into the video (found by {@link EncodedBarDetector}):
  * ordinary and bottom-aligned text and lower PGS images go to the lower bar, top-aligned text and upper PGS
  * images to the upper bar. ASS/SSA lines with their own placement are left where the author put them.

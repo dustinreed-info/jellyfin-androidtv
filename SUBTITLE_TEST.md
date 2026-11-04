@@ -1,6 +1,6 @@
 # Fire TV subtitle placement test
 
-Local AI-assisted prototype based on Jellyfin Android TV **v0.19.9**,
+Local prototype based on Jellyfin Android TV **v0.19.9**,
 commit `14a5e160efbb33d471ef2efe7ed9073fc2206785`.
 Current test version: **0.19.9-subtitles.4**, labeled **Jellyfin Subtitle Test**.
 Application ID: `org.jellyfin.androidtv.debug`.
